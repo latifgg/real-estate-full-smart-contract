@@ -2,7 +2,7 @@
 const mongoose = require('mongoose');
 
 const houseSchema = new mongoose.Schema({
-    blockchainId: { type: String, unique: true },
+    blockchainId: { type: String, unique: true, required: true },
     title: String,
     description: String,
     imageUrl: String,

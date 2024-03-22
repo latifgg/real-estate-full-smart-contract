@@ -12,13 +12,14 @@ exports.getAllHouses = async (req, res) => {
 
 exports.getHouseByblockchainId = async (req, res) => {
     const { blockchainId } = req.params;
-    console.log("getbyblockchainId house with blockchainblockchainId:", blockchainId);
+    console.log(`getbyblockchainId house with blockchainId type: ${typeof blockchainId}, value: ${blockchainId}`);
+
     console.log("Aranan blockchainId:", req.params.blockchainId);
     try {
         // blockchainblockchainId'ye göre evi bul
-        const house = await HouseModel.findOne({ blockchainId })
-        .then(house => console.log("Bulunan ev:", house))
-         .catch(error => console.error("Hata:", error));
+        const house = await HouseModel.findOne({ blockchainId: req.params.blockchainId })
+       console.log("Bulunan ev:", house)
+         
          console.log("MongoDB Sorgusu için kullanılan blockchainId:", blockchainId);
         if (!house) {
             return res.status(404).send({ message: "House not found" });
@@ -34,6 +35,8 @@ exports.getHouseByblockchainId = async (req, res) => {
 exports.createHouse = async (req, res) => {
     // req.body'den gelen veriler
     const { blockchainId, title, description, price, totalShares, sharesSold, houseOwner, imageUrl  } = req.body;
+    console.log('Received headers:', req.headers);
+    console.log("req.body from create house",req.body);
 
     // Yeni ev oluşturma
     const house = new HouseModel({
@@ -111,20 +114,37 @@ exports.buyShares = async (req, res) => {
 
 
 exports.syncHouse = async (req, res) => {
-    const { blockchainId, title, description, price, totalShares, houseOwner, imageUrl } = req.body;
+    const { blockchainId, title, description, price, totalShares, houseOwner, imageUrl, sharesSold  } = req.body;
 
     try {
         const updatedHouse = await HouseModel.findOneAndUpdate(
-            { blockchainId },
-            { title, description, price, totalShares, houseOwner, imageUrl },
-            { new: true, upsert: true } // Eğer ev bulunamazsa yeni bir kayıt oluştur
+            { blockchainId }, // Bulunacak evin kriteri
+            {
+                // Güncellenecek alanlar
+                title,
+                description,
+                price,
+                totalShares,
+                houseOwner,
+                imageUrl,
+                sharesSold
+            },
+            {
+                new: true, // Geriye güncellenmiş dokümanın döndürülmesi
+                upsert: true // Eğer doküman bulunamazsa, yeni bir doküman oluştur
+            }
         );
 
-        res.json(updatedHouse);
+        if(updatedHouse) {
+            res.json({ message: "Ev başarıyla güncellendi/oluşturuldu", house: updatedHouse });
+        } else {
+            res.status(404).json({ message: "Ev bulunamadı ve oluşturulamadı" });
+        }
     } catch (error) {
         res.status(500).send({ message: "Senkronizasyon sırasında bir hata oluştu", error: error.message });
     }
 };
+
 
 
 exports.deleteAllHouses = async (req, res) => {
